@@ -163,10 +163,10 @@ class cryptobackup {
 			#$cmdline = sprintf("/usr/bin/megaput --username %s --password %s --no-progress --path=%s %s %s",$this->method_mega['remote_dir'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
 			$cmdline = sprintf("/usr/bin/megaput --username %s --password %s --no-progress --path=%s %s %s",$value['username'], $value['password'], $value['remote_dir'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
 			$this->_debug("_upload_mega: $cmdline");
-			#$sysout = system($cmdline,$return_var);
+			$sysout = system($cmdline,$return_var);
 			if ($return_var != 0) {
 				$this->_debug("_upload_mega: upload might have failed for 1 or more files.. return var[".$return_var."]");
-				#return False;
+				#return False; // Todo: fix better error checking?
 			}
 		}
 		return True;	
