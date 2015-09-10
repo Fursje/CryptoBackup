@@ -16,7 +16,10 @@ $bk->addDirectory('/tmp/dir2/');
 $bk->local_backup_dir = "/home/backup-tmp/";
 
 // Where to store it.. only mega works atm..
-$bk->transfer_method = "mega";
+//$bk->addTransferMethod("mega"); // implied if you add credentials for now..
+$bk->addMegaCredentials("mail@example.net", "password", "/Root/backup/");
+
+$bk->gpg_recipients = "-r mail@example.net";
 
 // Run... ;)
 $bk->backup_run();

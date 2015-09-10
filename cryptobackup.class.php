@@ -25,14 +25,16 @@ class cryptobackup {
 
 	// Editable variables
 	public $debug = True;
-	public $transfer_method = "mega"; // scp or mega
+	public $transfer_method = array();
 	public $local_backup_dir = "/tmp/backup_dir/";
 	public $cleanup_afterwards = True;
 
 	# Transfer methods
-	public $method_scp = array('host'=>'','username'=>'','ssh_key'=>'','remote_dir'=>'');
-	// Make sure the remote_dir exists
-	public $method_mega = array('username'=>'','password'=>'','remote_dir'=>'/Root/backup/');
+	#public $method_scp = array('host'=>'','username'=>'','ssh_key'=>'','remote_dir'=>'');
+	#public $method_mega = array('username'=>'','password'=>'','remote_dir'=>'/Root/backup/');
+
+	public $method_scp = array();
+	public $method_mega = array();
 
 	# PGP Variables
 	public $gpg_flags = "--no-default-recipient --force-mdc --encrypt";
@@ -42,6 +44,7 @@ class cryptobackup {
 	public $keep_backup_weeks = 3; // no im not going to change the week interval..
 
 	// Rather not touch variables.. (warned you!)
+	private $transfer_method_valid = array('scp','mega');
 	private $backup_dirs = array();
 	private $incremental_state_file = "";
 	private $incremental_state_file_sync = "";
@@ -61,7 +64,36 @@ class cryptobackup {
 		}
 
 	}
-
+	public function addMegaCredentials($username, $password, $remote_dir) {
+		// Todo: SanityCheck; remote_dir exists/create it?
+		$this->addTransferMethod("mega");
+		$this->method_mega[] = array(
+			'username' => $username,
+			'password' => $password,
+			'remote_dir' => $remote_dir
+		);
+	}
+	public function addScpCredentials($username, $key_file, $remote_dir) {
+		// Todo: SanityCheck; keyfile/remote_dir exists.
+		$this->addTransferMethod("scp");
+		$this->method_scp[] = array(
+			'username' => $username,
+			'password' => $password,
+			'remote_dir' => $remote_dir
+		);
+	}
+	public function addTransferMethod($method) {
+		if (!in_array($method,$this->transfer_method_valid)) { 
+			$this->_debug("setTransferMethod: invalid method: [$method]");
+			return False; 
+		}
+		if (!in_array($method,$this->transfer_method)) {
+			$this->transfer_method[] = $method;
+			$this->_debug("setTransferMethod: $method");
+			return True;
+		}
+		return False;
+	}
 
 	public function addDirectory($directorie) {
 		if (file_exists($directorie)) {
@@ -127,12 +159,15 @@ class cryptobackup {
 	private function _upload_mega() {
 		// # megaput --path=/Root/backup/ backup-week-37-251.tgz.gpg backup-week-37.state.gpg
 		// Suppose we want to always transfer the .pgp files
-		$cmdline = sprintf("/usr/bin/megaput --no-progress --path=%s %s %s",$this->method_mega['remote_dir'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
-		$this->_debug("_upload_mega: $cmdline");
-		$sysout = system($cmdline,$return_var);
-		if ($return_var != 0) {
-			$this->_debug("_upload_mega: upload might have failed for 1 or more files.. return var[".$return_var."]");
-			return False;
+		foreach ($this->method_mega as $key=>$value) {
+			#$cmdline = sprintf("/usr/bin/megaput --username %s --password %s --no-progress --path=%s %s %s",$this->method_mega['remote_dir'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
+			$cmdline = sprintf("/usr/bin/megaput --username %s --password %s --no-progress --path=%s %s %s",$value['username'], $value['password'], $value['remote_dir'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
+			$this->_debug("_upload_mega: $cmdline");
+			#$sysout = system($cmdline,$return_var);
+			if ($return_var != 0) {
+				$this->_debug("_upload_mega: upload might have failed for 1 or more files.. return var[".$return_var."]");
+				#return False;
+			}
 		}
 		return True;	
 	}
@@ -141,26 +176,32 @@ class cryptobackup {
 		// hmm not sure about this yet, but lets rename the .state file so we can have daily states also
 		rename($this->local_backup_dir.$this->incremental_state_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
 
-		switch ($this->transfer_method) {
-			case 'scp':
-				# code...
-				print "not implemented yet..\n";
-				break;
-			case 'mega':
-				$this->_upload_mega();
-				break;
-			default:
-				print "like.. no?";
-				break;
+		foreach ($this->transfer_method as $transfer_method) {
+			switch ($transfer_method) {
+				case 'scp':
+					# code...
+					print "not implemented yet..\n";
+					break;
+				case 'mega':
+					$this->_upload_mega();
+					break;
+				default:
+					print "like.. no?";
+					break;
+			}
 		}
 	}
 	// Public Functions
 	public function backup_run() {
-		if (count($this->backup_dirs) == 0) { die("\tset some backup dirs first..."); }
-		if (!file_exists($this->local_backup_dir)) { die("\t tmp backup storage directory missing.."); }
-		if (file_exists($this->local_backup_dir.$this->backup_file)) { die("Backup from today already exists?! Exit for now.."); }
-		if (!$this->_create_archive()) { die("\t creating the backup tar failed.."); }
-		if (!$this->_create_crypt()) { die("creating gpg blob failed.."); }
+		// Sanity Check
+		if (count($this->backup_dirs) == 0) { die("Error: set some backup dirs first..."); }
+		if (!file_exists($this->local_backup_dir)) { die("Error: tmp backup storage directory missing.."); }
+		if (file_exists($this->local_backup_dir.$this->backup_file)) { die("Error: Backup from today already exists?! Exit for now.."); }
+		if (count($this->transfer_method) == 0) { die("Error: You need to set atleast 1 transfer method."); }
+
+		// Start stuff..
+		if (!$this->_create_archive()) { die("Error: creating the backup tar failed.."); }
+		if (!$this->_create_crypt()) { die("Error: creating gpg blob failed.."); }
 
 		// Transfer
 		$this->_upload();
