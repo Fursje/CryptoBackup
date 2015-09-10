@@ -45,7 +45,7 @@ class cryptobackup {
 	private $backup_dirs = array();
 	private $incremental_state_file = "";
 	private $incremental_state_file_sync = "";
-	private $backup_file = "";	
+	private $backup_file = "";
 
 	public function __construct() {
 		$this->incremental_state_file = sprintf("backup-week-%d.state",date("W",time()));
@@ -68,14 +68,16 @@ class cryptobackup {
 			if (!in_array($directorie, $this->backup_dirs)) {
 				$this->backup_dirs[] = $directorie;
 				$this->_debug("addDirectory: $directorie");
+				return true;
 			}
-		} else { return False; }
+		}
+		return false;
 	}
 
 	private function _create_archive() {
 		$cmdline = sprintf("/bin/tar -zcf %s --listed-incremental %s %s",$this->local_backup_dir.$this->backup_file,$this->local_backup_dir.$this->incremental_state_file, implode(" ",$this->backup_dirs));
 		$this->_debug("_create_archive: $cmdline");
-		$sysout = system($cmdline,$return_var);
+		system($cmdline,$return_var);
 		if ($return_var != 0) {
 			$this->_debug("_create_archive: tar failed.. return var[".$return_var."]");
 			return False;
@@ -96,7 +98,7 @@ class cryptobackup {
 			// Create gpg file
 			$cmdline = sprintf("/usr/bin/gpg %s %s %s",$this->gpg_flags, $this->gpg_recipients, $this->local_backup_dir.$file);
 			$this->_debug("_create_crypt: $cmdline");
-			$sysout = system($cmdline,$return_var);
+			system($cmdline,$return_var);
 			if ($return_var != 0) {
 				$this->_debug("_create_crypt: gpg failed.. return var[".$return_var."]");
 				return False;
@@ -129,12 +131,12 @@ class cryptobackup {
 		// Suppose we want to always transfer the .pgp files
 		$cmdline = sprintf("/usr/bin/megaput --no-progress --path=%s %s %s",$this->method_mega['remote_dir'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
 		$this->_debug("_upload_mega: $cmdline");
-		$sysout = system($cmdline,$return_var);
+		system($cmdline,$return_var);
 		if ($return_var != 0) {
 			$this->_debug("_upload_mega: upload might have failed for 1 or more files.. return var[".$return_var."]");
 			return False;
 		}
-		return True;	
+		return True;
 	}
 
 	private function _upload() {
@@ -175,5 +177,3 @@ class cryptobackup {
 
 
 }
-
-?>
