@@ -11,4 +11,4 @@ Decrypt:
 
 # Todo
 * Create Rotate/Cleanup part.
-* 
+* Fix hardcoded program paths.
