@@ -1,24 +1,9 @@
 <?php
 
 /*
- CryptoBackup (v0.1 09/09/2015)
- Description: Simple script that allows you to create incremental crypto backups,
-and store it through;
- - scp
- - mega
- - ?
+ CryptoBackup (v0.2 10/09/2015)
+ Description: Simple script that allows you to create incremental crypto backups.
 
- Howto 
-  Decrypt: 
-   # gpg --decrypt --output test.tgz backup-week-37-251.tgz.gpg
-
- Todo:
-  create cleanup script
-  rewrite some functions
-  ...
-
- Dependencies:
-  - https://github.com/megous/megatools/ (only if you use mega transfer method)
 */
 
 class cryptobackup {
