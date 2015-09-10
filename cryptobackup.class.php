@@ -160,7 +160,6 @@ class cryptobackup {
 		// # megaput --path=/Root/backup/ backup-week-37-251.tgz.gpg backup-week-37.state.gpg
 		// Suppose we want to always transfer the .pgp files
 		foreach ($this->method_mega as $key=>$value) {
-			#$cmdline = sprintf("/usr/bin/megaput --username %s --password %s --no-progress --path=%s %s %s",$this->method_mega['remote_dir'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
 			$cmdline = sprintf("/usr/bin/megaput --username %s --password %s --no-progress --path=%s %s %s",$value['username'], $value['password'], $value['remote_dir'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg");
 			$this->_debug("_upload_mega: $cmdline");
 			$sysout = system($cmdline,$return_var);
@@ -194,6 +193,7 @@ class cryptobackup {
 	// Public Functions
 	public function backup_run() {
 		// Sanity Check
+		// Todo: fugly..
 		if (count($this->backup_dirs) == 0) { die("Error: set some backup dirs first..."); }
 		if (!file_exists($this->local_backup_dir)) { die("Error: tmp backup storage directory missing.."); }
 		if (file_exists($this->local_backup_dir.$this->backup_file)) { die("Error: Backup from today already exists?! Exit for now.."); }
