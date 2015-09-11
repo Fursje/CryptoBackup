@@ -71,14 +71,18 @@ class cryptobackup {
 			'remote_dir' => $remote_dir
 		);
 	}
-	public function addScpCredentials($username, $key_file, $remote_dir) {
+	public function addScpCredentials($hostname, $port, $username, $key_file, $remote_dir) {
 		// Todo: SanityCheck; keyfile/remote_dir exists.
-		$this->addTransferMethod("scp");
-		$this->method_scp[] = array(
-			'username' => $username,
-			'password' => $password,
-			'remote_dir' => $remote_dir
-		);
+		if (file_exists($key_file)) {
+			$this->addTransferMethod("scp");
+			$this->method_scp[] = array(
+				'hostname' => $hostname,
+				'port' => $port,
+				'username' => $username,
+				'key_file' => $key_file,
+				'remote_dir' => $remote_dir
+			);
+		}
 	}
 	public function addTransferMethod($method) {
 		if (!in_array($method,$this->transfer_method_valid)) { 
@@ -168,6 +172,19 @@ class cryptobackup {
 		}
 		return True;	
 	}
+	private function _upload_scp() {
+		// Suppose we want to always transfer the .pgp files
+		foreach ($this->method_scp as $key=>$value) {
+			$cmdline = sprintf("/usr/bin/scp -i '%s' -P %d '%s' '%s' %s@%s:'%s'",$value['key_file'], $value['port'], $this->local_backup_dir.$this->backup_file.".gpg", $this->local_backup_dir.$this->incremental_state_file_sync.".gpg", $value['username'], $value['hostname'], $value['remote_dir']);
+			$this->_debug("_upload_scp: $cmdline");
+			$sysout = system($cmdline,$return_var);
+			if ($return_var != 0) {
+				$this->_debug("_upload_scp: upload might have failed for 1 or more files.. return var[".$return_var."]");
+				#return False; // Todo: fix better error checking?
+			}
+		}
+		return True;
+	}
 
 	private function _upload() {
 		// hmm not sure about this yet, but lets rename the .state file so we can have daily states also
@@ -176,8 +193,7 @@ class cryptobackup {
 		foreach ($this->transfer_method as $transfer_method) {
 			switch ($transfer_method) {
 				case 'scp':
-					# code...
-					print "not implemented yet..\n";
+					$this->_upload_scp();
 					break;
 				case 'mega':
 					$this->_upload_mega();

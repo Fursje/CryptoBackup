@@ -15,9 +15,10 @@ $bk->addDirectory('/tmp/dir2/');
 // Where to store the state file and create the temporary tar/gpg file.
 $bk->local_backup_dir = "/home/backup-tmp/";
 
-// Where to store it.. only mega works atm..
-//$bk->addTransferMethod("mega"); // implied if you add credentials for now..
+// Where to store it.
 $bk->addMegaCredentials("mail@example.net", "password", "/Root/backup/");
+$bk->addScpCredentials("server.example.net","22","root", "/home/user/Projects/CryptoBackup/scp.key", "/home/backup-test/");
+
 
 $bk->gpg_recipients = "-r mail@example.net";
 
