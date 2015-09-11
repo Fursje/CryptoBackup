@@ -25,4 +25,7 @@ $bk->gpg_recipients = "-r mail@example.net";
 // Run... ;)
 $bk->backup_run();
 
+// Cleanup backups older then whats defined in $bk->keep_backup_weeks
+$bk->backup_cleanup();
+
 ?>

@@ -49,11 +49,12 @@ class cryptobackup {
 	private $backup_file = "";	
 
 	public function __construct() {
-		$this->incremental_state_file = sprintf("backup-week-%d.state",date("W",time()));
+		$time = time();
+		$this->incremental_state_file = sprintf("backup-week-%d.state",date("W",$time));
 		$this->_debug("__construct: ". $this->incremental_state_file);
-		$this->incremental_state_file_sync = sprintf("backup-week-%d-%d.state",date("W",time()),date("z",time()));
+		$this->incremental_state_file_sync = sprintf("backup-week-%d-%d-%s.state",date("W",time()),date("z",time()),$time);
 		$this->_debug("__construct: ". $this->incremental_state_file_sync);
-		$this->backup_file = sprintf("backup-week-%d-%d.tgz",date("W",time()),date("z",time()));
+		$this->backup_file = sprintf("backup-week-%d-%d-%s.tgz",date("W",time()),date("z",time()),$time);
 		$this->_debug("__construct: ". $this->backup_file);
 	}
 	public function __destruct() {
@@ -158,6 +159,7 @@ class cryptobackup {
 		}
 	}
 
+	// Remote Storage
 	private function _upload_mega() {
 		// # megaput --path=/Root/backup/ backup-week-37-251.tgz.gpg backup-week-37.state.gpg
 		// Suppose we want to always transfer the .pgp files
@@ -204,6 +206,75 @@ class cryptobackup {
 			}
 		}
 	}
+
+	private function _cleanup_files_check($files,&$cleanup_rm) {
+		$cleanup_rm = array();
+		$cleanup_good = array();
+		$current_time = time();
+		$cleanup_older_then = $current_time - ($this->keep_backup_weeks * 604800);
+		$this->_debug("_cleanup_files_check: cleanup files; older then:[$cleanup_older_then] current_time[$current_time]");
+		foreach ($files as $file) {
+			if (preg_match("/^backup\-week\-([\d]{1,})\-[\d]{1,}\-([\d]{1,}).*$/",$file,$match)) {
+				if ($match['2'] <= $cleanup_older_then) {
+					// to old
+					$this->_debug("_cleanup_files_check: file [$file] is to old.. so remove it.[".$match['2']."<=$cleanup_older_then]");
+					$cleanup_rm[] = $file;
+				} else {
+					$cleanup_good[] = $file;
+				}
+			}
+		}
+		return True;
+	}
+	// Remote Cleanup..
+	private function _cleanup_list_scp() {
+		foreach ($this->method_scp as $key=>$value) {
+			$remove_files = array();
+			$remote_file = array();
+			$cmdline = sprintf("/usr/bin/ssh -i '%s' %s@%s 'ls %s'", $value['key_file'], $value['username'], $value['hostname'], $value['remote_dir']);
+			$this->_debug("_cleanup_list_scp: $cmdline");
+			$sysout = array();
+			exec($cmdline,$sysout,$return_var);
+			if ($return_var != 0) {
+				$this->_debug("_cleanup_list_scp: getting remote file list failed.. return var[".$return_var."]");
+				continue;
+			} else {
+				if ($this->_cleanup_files_check($sysout,$remove_files)) {
+					// remove files
+					foreach ($remove_files as $file) {
+						$remote_file = sprintf("'%s/%s'",$value['remote_dir'],$file);
+						$cmdline = sprintf("/usr/bin/ssh -i '%s' %s@%s \"rm %s\"", $value['key_file'], $value['username'], $value['hostname'], $remote_file);
+						$this->_debug("_cleanup_list_scp: $cmdline");
+						exec($cmdline,$sysout,$return_var);
+						if ($return_var != 0) {
+							$this->_debug("_cleanup_list_scp: remote delete gave an error.. return var[".$return_var."]");
+							continue;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private function _cleanup_list_mega() {
+
+	}
+	public function backup_cleanup() {
+		foreach ($this->transfer_method as $transfer_method) {
+			switch ($transfer_method) {
+				case 'scp':
+					$this->_cleanup_list_scp();
+					break;
+				case 'mega':
+					$this->_cleanup_list_mega();
+					break;
+				default:
+					print "like.. no?";
+					break;
+			}
+		}		
+	}
+
 	// Public Functions
 	public function backup_run() {
 		// Sanity Check
