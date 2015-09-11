@@ -160,7 +160,7 @@ class cryptobackup {
 			print $debug_line;
 		}
 		if ($this->log2disk) {
-			$file = dirname(__FILE__)."cryptobackup.log";
+			$file = dirname(__FILE__)."/cryptobackup.log";
 			file_put_contents($file,$debug_line,FILE_APPEND);
 		}
 	}
