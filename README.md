@@ -10,5 +10,4 @@ Decrypt:
 * MegaTools -> https://github.com/megous/megatools/ (if you use the mega backend)
 
 # Todo
-* Create Rotate/Cleanup part.
 * Fix hardcoded program paths.
