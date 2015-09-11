@@ -240,7 +240,6 @@ class cryptobackup {
 				continue;
 			} else {
 				if ($this->_cleanup_files_check($sysout,$remove_files)) {
-					// remove files
 					foreach ($remove_files as $file) {
 						$remote_file = sprintf("'%s/%s'",$value['remote_dir'],$file);
 						$cmdline = sprintf("/usr/bin/ssh -i '%s' %s@%s \"rm %s\"", $value['key_file'], $value['username'], $value['hostname'], $remote_file);
@@ -257,7 +256,30 @@ class cryptobackup {
 	}
 
 	private function _cleanup_list_mega() {
-
+		foreach ($this->method_mega as $key=>$value) {
+			$remove_files = array();
+			$remote_file = array();
+			$cmdline = sprintf("/usr/bin/megals --no-ask-password --username %s --password %s -n %s", $value['username'], $value['password'], $value['remote_dir']);
+			$this->_debug("_cleanup_list_mega: $cmdline");
+			$sysout = array();
+			exec($cmdline,$sysout,$return_var);
+			if ($return_var != 0) {
+				$this->_debug("_cleanup_list_mega: getting remote file list failed.. return var[".$return_var."]");
+				continue;
+			} else {
+				if ($this->_cleanup_files_check($sysout,$remove_files)) {
+					foreach ($remove_files as $file) {
+						$cmdline = sprintf("/usr/bin/megarm --no-ask-password --username %s --password %s '%s'", $value['username'], $value['password'], $value['remote_dir'].$file);
+						$this->_debug("_cleanup_list_mega: $cmdline");
+						exec($cmdline,$sysout,$return_var);
+						if ($return_var != 0) {
+							$this->_debug("_cleanup_list_mega: remote delete gave an error.. return var[".$return_var."]");
+							continue;
+						}
+					}
+				}
+			}
+		}
 	}
 	public function backup_cleanup() {
 		foreach ($this->transfer_method as $transfer_method) {
@@ -291,12 +313,8 @@ class cryptobackup {
 		// Transfer
 		$this->_upload();
 
-		// debug
-		#$this->cleanup_afterwards = False;
-	}
-
-	public function backup_cleanup() {
-		// Yeah.. need to figure this out sometime ;)
+		// automatically call the cleanup?
+		# $this->backup_cleanup();
 	}
 
 
