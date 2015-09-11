@@ -1,7 +1,7 @@
 <?php
 
 /*
-	CryptoBackup (v0.2 10/09/2015)
+	CryptoBackup (v0.2.1 12/09/2015)
 	Description: Simple script that allows you to create incremental crypto backups.
 
 	This program is free software: you can redistribute it and/or modify
@@ -23,6 +23,7 @@ class cryptobackup {
 
 	// Editable variables
 	public $debug = True;
+	public $log2disk = True;
 	public $transfer_method = array();
 	public $local_backup_dir = "/tmp/backup_dir/";
 	public $cleanup_afterwards = True;
@@ -154,8 +155,13 @@ class cryptobackup {
 	}
 
 	private function _debug($line) {
+		$debug_line = sprintf("[%s][DEBUG] %s \n",date("r",time()), $line);
 		if ($this->debug) {
-			print sprintf("[%s][DEBUG] %s \n",date("r",time()), $line);
+			print $debug_line;
+		}
+		if ($this->log2disk) {
+			$file = dirname(__FILE__)."cryptobackup.log";
+			file_put_contents($file,$debug_line,FILE_APPEND);
 		}
 	}
 
