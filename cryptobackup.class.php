@@ -112,8 +112,8 @@ class cryptobackup {
 		$cmdline = sprintf("/bin/tar -zcf %s --listed-incremental %s %s",$this->local_backup_dir.$this->backup_file,$this->local_backup_dir.$this->incremental_state_file, implode(" ",$this->backup_dirs));
 		$this->_debug("_create_archive: $cmdline");
 		$sysout = system($cmdline,$return_var);
-		if ($return_var != 0) {
-			$this->_debug("_create_archive: tar failed.. return var[".$return_var."]");
+		if ($return_var == 2) {
+			$this->_debug("_create_archive: tar fatal error.. return var[".$return_var."]");
 			return False;
 		}
 		return True;
