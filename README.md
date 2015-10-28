@@ -1,5 +1,5 @@
 # CryptoBackup
-Simple script that allows you to create incremental crypto backups, and store it via/on (scp,mega.nz).
+Simple script that allows you to create incremental encrypted backups, and transfer it via scp or store it at mega.nz
 
 # Howto
 Decrypt: 
